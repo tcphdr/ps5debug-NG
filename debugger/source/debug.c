@@ -51,6 +51,13 @@ static int resume_app_via_self_id(int pid) {
     return sceApplicationContinue(app_id);
 }
 
+static inline void resume_app_unelev(struct elev_state *es, int pid) {
+    int was_valid = es->valid;
+    if (was_valid) elev_restore(es);
+    resume_app_via_self_id(pid);
+    if (was_valid) (void)elev_save_and_set(es);
+}
+
 extern bool fw_uses_kernel_dbreg_path(void);
 extern bool is_process_stopped(int pid);
 extern bool kern_thread_step_walker(int pid);
@@ -289,12 +296,12 @@ void debug_full_teardown(void *svc) {
         count = rc;
         lwpids = (int *)net_alloc_buffer((unsigned long)(count * 4));
         if (!lwpids) {
-            resume_app_via_self_id(pid);
+            resume_app_unelev(&es, pid);
             ptrace_raw(PT_CONTINUE, pid, (void *)1, 0);
             goto close_socket_and_unlock;
         }
         if (ptrace_raw(PT_GETLWPLIST, pid, lwpids, count) == -1) {
-            resume_app_via_self_id(pid);
+            resume_app_unelev(&es, pid);
             ptrace_raw(PT_CONTINUE, pid, (void *)1, 0);
             goto close_socket_and_unlock;
         }
@@ -329,7 +336,7 @@ void debug_full_teardown(void *svc) {
 free_and_detach:
     if (lwpids) free(lwpids);
     if (we_stopped) {
-        resume_app_via_self_id(pid);
+        resume_app_unelev(&es, pid);
     }
     ptrace_raw(PT_DETACH, pid, NULL, 0);
 
@@ -428,6 +435,8 @@ int debug_attach_handle(int fd, struct cmd_packet *packet) {
         return 1;
     }
 
+    elev_restore(&es);
+
     int wait_status = 0;
     *__error() = 0;
     long wait_rc = __crt_syscall(7 , ap->pid, &wait_status, 0, 0);
@@ -436,6 +445,11 @@ int debug_attach_handle(int fd, struct cmd_packet *packet) {
     }
 
     resume_app_via_self_id(ap->pid);
+
+    if (elev_save_and_set(&es) != 0) {
+        net_send_int32(fd, CMD_ERROR);
+        return 1;
+    }
     if (ptrace_raw(PT_CONTINUE, ap->pid, (void *)1, 0) != 0) {
         elev_restore(&es);
         net_send_int32(fd, CMD_ERROR);
@@ -597,7 +611,7 @@ int debug_set_watchpoint_handle(int fd, struct cmd_packet *packet) {
     }
 
     if (we_stopped) {
-        resume_app_via_self_id(pid);
+        resume_app_unelev(&es, pid);
         ptrace_raw(PT_CONTINUE, pid, (void *)1, 0);
     }
     net_send_int32(fd, CMD_SUCCESS);
@@ -606,7 +620,7 @@ int debug_set_watchpoint_handle(int fd, struct cmd_packet *packet) {
     goto wp_done;
 
 wp_resume_and_err:
-    resume_app_via_self_id(pid);
+    resume_app_unelev(&es, pid);
     ptrace_raw(PT_CONTINUE, pid, (void *)1, 0);
 wp_err_no_resume:
     net_send_int32(fd, CMD_ERROR);
@@ -970,11 +984,7 @@ static void debug_handle_breakpoint_resume(void) {
 static uint32_t g_last_alive_check = 0;
 
 int dispatch_debug_events(void) {
-
-    struct elev_state es;
-    if (elev_save_and_set(&es) != 0) return 1;
-    int rc = 0;
-    #define DDE_RETURN(v) do { rc = (v); goto dde_done; } while (0)
+    #define DDE_RETURN(v) return (v)
 
     debug_handle_breakpoint_resume();
 
@@ -1221,10 +1231,7 @@ int dispatch_debug_events(void) {
     resume_app_via_self_id((int)DBGCTX()->pid);
     DDE_RETURN(0);
 
-dde_done:
-    elev_restore(&es);
     #undef DDE_RETURN
-    return rc;
 }
 
 int debug_handle(int fd, struct cmd_packet *packet) {

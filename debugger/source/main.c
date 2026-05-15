@@ -3,6 +3,7 @@
 #include "protocol.h"
 #include "sdk_shim.h"
 #include "net.h"
+#include "version.h"
 
 extern int  cmd_handler(int fd, struct cmd_packet *packet, unsigned char client_idx);
 extern void print_ascii_banner(void);
@@ -300,7 +301,7 @@ teardown:
 
 static void debugger_server_loop(void) {
     static const char disconnect_msg[] = "ps5debug-NG disconnected.";
-    static const char loaded_msg[]     = "ps5debug-NG by OSR v1.2.2 loaded!\n"
+    static const char loaded_msg[]     = PS5DEBUG_NG_BRAND_STR " loaded!\n"
                                          "Coded by OpenSourcereR\n"
                                          "Special thanks to\n"
                                          "golden, Ctn & SiSTRo! \xE2\x9D\xA4\n";

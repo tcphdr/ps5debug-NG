@@ -14,7 +14,7 @@ file:line citations. Nothing is summarized from external documentation.
 | Symbol              | Value                                | Source                     |
 |---------------------|--------------------------------------|----------------------------|
 | `PACKET_VERSION`    | `"1.3"`                              | protocol.h:11              |
-| `PACKET_BRANDING`   | `"ps5debug-NG by OSR v1.2.2"`        | meta.c (`handle_branding`) |
+| `PACKET_BRANDING`   | `"ps5debug-NG by OSR v1.2.3"`        | meta.c (`handle_branding`) |
 | `PACKET_MAGIC`      | `0xFFAABBCC`                         | protocol.h:13              |
 | `BROADCAST_MAGIC`   | `0xFFFFAAAA`                         | server.h:19                |
 
@@ -830,7 +830,7 @@ Documented here so a developer doesn't mistake them for bugs:
 
 ---
 
-*This document reflects the `ps5debug-NG v1.2.2` payload (see
+*This document reflects the `ps5debug-NG v1.2.3` payload (see
 `debugger/source/meta.c:27`). Citations elsewhere may point at line numbers
 that drift as the source evolves - when in doubt, the source under
 `common/include/protocol.h`, `debugger/source/`, and `installer/source/` is

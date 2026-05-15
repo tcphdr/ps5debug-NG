@@ -5,6 +5,7 @@
 #include "net.h"
 #include "proc.h"
 #include "debug_state.h"
+#include "version.h"
 
 extern int kern_handle(int fd, struct cmd_packet *packet);
 extern int console_handle(int fd, struct cmd_packet *packet);
@@ -24,7 +25,7 @@ int handle_version(int fd, struct cmd_packet *packet) {
 
 int handle_branding(int fd, struct cmd_packet *packet) {
     (void)packet;
-    char     brand[] = "ps5debug-NG by OSR v1.2.2";
+    char     brand[] = PS5DEBUG_NG_BRAND_STR;
     uint32_t len     = (uint32_t)(sizeof(brand) - 1);
     net_send_all(fd, &len, sizeof(uint32_t));
     net_send_all(fd, brand, (int)len);

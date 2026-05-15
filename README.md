@@ -266,7 +266,7 @@ elfldr from etaHEN-class loaders).
 You should see a system notification confirming the payload is alive:
 
 ```
-ps5debug-NG by OSR v1.2.2 loaded!
+ps5debug-NG by OSR v1.2.3 loaded!
 Coded by OpenSourcereR
 Special thanks to
 golden, Ctn & SiSTRo! ♥
