@@ -4,12 +4,10 @@
 #include "sdk_shim.h"
 #include "net.h"
 #include "kern_rw_fast.h"
+#include "proc_field_offsets.h"
 #include <stdarg.h>
 
 #define PROC_NEXT_OFFSET           0x00
-#define PROC_TITLE_ID_OFFSET       0x470
-#define PROC_CONTENT_ID_OFFSET     0x4C4
-#define PROC_SELFINFO_NAME_OFFSET  0x59C
 #define PROC_SELFINFO_NAME_SIZE    32
 
 struct cmd_console_notify_packet {
@@ -184,6 +182,13 @@ int console_foreground_app_handle(int fd, struct cmd_packet *packet) {
     struct cmd_console_foreground_app_response resp;
     memset(&resp, 0, sizeof(resp));
 
+    struct proc_field_offsets off;
+    if (proc_get_field_offsets(&off) != 0) {
+        net_send_int32(fd, CMD_SUCCESS);
+        net_send_all(fd, &resp, sizeof(resp));
+        return 0;
+    }
+
     intptr_t allproc_head = (intptr_t)KERNEL_ADDRESS_ALLPROC;
     intptr_t kproc = 0;
     if (kernel_copyout_fast(allproc_head, &kproc, sizeof(kproc)) != 0) {
@@ -197,7 +202,7 @@ int console_foreground_app_handle(int fd, struct cmd_packet *packet) {
     for (uint32_t guard = 0; cur != 0 && guard < 0x1000; guard++) {
         char nm[PROC_SELFINFO_NAME_SIZE + 1];
         nm[PROC_SELFINFO_NAME_SIZE] = 0;
-        if (kernel_copyout_fast(cur + PROC_SELFINFO_NAME_OFFSET, nm, PROC_SELFINFO_NAME_SIZE) == 0
+        if (kernel_copyout_fast(cur + off.name, nm, PROC_SELFINFO_NAME_SIZE) == 0
             && nm[0] != 0
             && strncmp(nm, "eboot.bin", 9) == 0
             && (nm[9] == '\0' || nm[9] == ' ')) {
@@ -231,9 +236,9 @@ int console_foreground_app_handle(int fd, struct cmd_packet *packet) {
     const uint8_t *p = (const uint8_t *)proc_buf;
 
     resp.pid = (uint32_t)found_pid;
-    memcpy(resp.name, p + PROC_SELFINFO_NAME_OFFSET, PROC_SELFINFO_NAME_SIZE);
-    memcpy(resp.titleid,   p + PROC_TITLE_ID_OFFSET,   sizeof(resp.titleid));
-    memcpy(resp.contentid, p + PROC_CONTENT_ID_OFFSET, sizeof(resp.contentid));
+    memcpy(resp.name, p + off.name, PROC_SELFINFO_NAME_SIZE);
+    memcpy(resp.titleid,   p + off.titleid,   sizeof(resp.titleid));
+    memcpy(resp.contentid, p + off.contentid, sizeof(resp.contentid));
 
     char titleid_z[17];
     memcpy(titleid_z, resp.titleid, 16);

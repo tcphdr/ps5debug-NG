@@ -5,15 +5,19 @@
 #include <string.h>
 #include "sdk_shim.h"
 #include "kern_rw_fast.h"
+#include "proc_field_offsets.h"
 
 #define PROC_NEXT_OFFSET           0x00
-#define PROC_SELFINFO_NAME_OFFSET  0x59C
 #define PROC_SELFINFO_NAME_SIZE    32
 #define PROC_LIST_LIMIT            0x1000
 
 int find_proc_pid_by_name(const char *name)
 {
     if (!name) return -1;
+
+    struct proc_field_offsets off;
+    if (proc_get_field_offsets(&off) != 0)
+        return -1;
 
     intptr_t kproc = 0;
     if (kernel_copyout_fast((intptr_t)KERNEL_ADDRESS_ALLPROC,
@@ -25,7 +29,7 @@ int find_proc_pid_by_name(const char *name)
 
     for (uint32_t i = 0; i < PROC_LIST_LIMIT && cur != 0; i++) {
         memset(proc_name, 0, sizeof(proc_name));
-        if (kernel_copyout_fast(cur + PROC_SELFINFO_NAME_OFFSET,
+        if (kernel_copyout_fast(cur + off.name,
                                 proc_name, PROC_SELFINFO_NAME_SIZE) == 0
             && proc_name[PROC_SELFINFO_NAME_SIZE - 1] == 0
             && strcmp(proc_name, name) == 0)

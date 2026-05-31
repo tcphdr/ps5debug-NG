@@ -6,14 +6,11 @@
 #include "proc.h"
 #include "kdbg.h"
 #include "kern_rw_fast.h"
+#include "proc_field_offsets.h"
 #include "Zydis.h"
 
 #define PROC_NEXT_OFFSET           0x00
 #define PROC_VMSPACE_OFFSET        0x200
-#define PROC_TITLE_ID_OFFSET       0x470
-#define PROC_CONTENT_ID_OFFSET     0x4C4
-#define PROC_SELFINFO_NAME_OFFSET  0x59C
-#define PROC_PATH_OFFSET           0x5BC
 #define PROC_SELFINFO_NAME_SIZE    32
 
 static void copy_cstr_from_buf(const uint8_t *src, char *out, size_t max) {
@@ -338,9 +335,13 @@ int proc_list_handle(int fd, struct cmd_packet *packet) {
     }
     memset(entries, 0, length);
 
+    struct proc_field_offsets off;
+    proc_get_field_offsets(&off);
+
     cur = kproc;
     for (uint32_t i = 0; i < count && cur != 0; i++) {
-        kernel_copyout_fast(cur + PROC_SELFINFO_NAME_OFFSET, entries[i].name, PROC_SELFINFO_NAME_SIZE);
+        if (off.known)
+            kernel_copyout_fast(cur + off.name, entries[i].name, PROC_SELFINFO_NAME_SIZE);
         size_t nlen = 0;
         while (nlen < PROC_SELFINFO_NAME_SIZE && entries[i].name[nlen] != 0) nlen++;
         if (nlen < PROC_SELFINFO_NAME_SIZE) {
@@ -731,6 +732,12 @@ int proc_info_handle(int fd, struct cmd_packet *packet) {
         return 1;
     }
 
+    struct proc_field_offsets off;
+    if (proc_get_field_offsets(&off) != 0) {
+        net_send_int32(fd, CMD_DATA_NULL);
+        return 1;
+    }
+
     void *proc_buf = kernel_get_proc_struct_fast(ip->pid);
     if (!proc_buf) {
         net_send_int32(fd, CMD_DATA_NULL);
@@ -743,11 +750,11 @@ int proc_info_handle(int fd, struct cmd_packet *packet) {
 
     const uint8_t *p = (const uint8_t *)proc_buf;
 
-    memcpy(resp.name, p + PROC_SELFINFO_NAME_OFFSET, PROC_SELFINFO_NAME_SIZE);
+    memcpy(resp.name, p + off.name, PROC_SELFINFO_NAME_SIZE);
 
-    copy_cstr_from_buf(p + PROC_PATH_OFFSET,       resp.path,      sizeof(resp.path));
-    copy_cstr_from_buf(p + PROC_TITLE_ID_OFFSET,   resp.titleid,   sizeof(resp.titleid));
-    copy_cstr_from_buf(p + PROC_CONTENT_ID_OFFSET, resp.contentid, sizeof(resp.contentid));
+    copy_cstr_from_buf(p + off.path,      resp.path,      sizeof(resp.path));
+    copy_cstr_from_buf(p + off.titleid,   resp.titleid,   sizeof(resp.titleid));
+    copy_cstr_from_buf(p + off.contentid, resp.contentid, sizeof(resp.contentid));
 
     free(proc_buf);
 
