@@ -20,14 +20,19 @@ recognises the following firmware families. Booting on an unsupported FW prints
 `port_outer: kpatch SKIP - unsupported FW magic 0x...` to the kernel log and
 aborts cleanly.
 
-| Family             | Label in code              |
-|--------------------|----------------------------|
-| 3.xx               | `FW 3.x`                   |
-| 4.xx               | `FW 4.x`                   |
-| 5.xx               | `FW 5.x`                   |
-| 6.xx               | `FW 6.x`                   |
-| 7.xx               | `FW 7.x`                   |
-| 7.5x               | `FW 7.5x`                  |
+| Family             | Label in code              | Status                                     |
+|--------------------|----------------------------|--------------------------------------------|
+| 3.xx               | `FW 3.x`                   |                                            |
+| 4.xx               | `FW 4.x`                   |                                            |
+| 5.xx               | `FW 5.x`                   |                                            |
+| 6.xx               | `FW 6.x`                   |                                            |
+| 7.xx (incl. 7.5x)  | `FW 7.x`                   |                                            |
+| 8.xx               | `FW 8.x`                   | Initial support added - testing required   |
+| 9.xx               | `FW 9.x`                   | Initial support added - testing required   |
+| 10.xx              | `FW 10.x`                  | Initial support added - testing required   |
+| 11.xx              | `FW 11.x`                  | Initial support added - testing required   |
+| 12.xx              | `FW 12.x`                  | Initial support added - testing required   |
+| 13.xx              | `FW 13.x`                  | Initial support added - testing required   |
 
 Each family covers several point releases - see the switch in
 [installer/source/main.c](installer/source/main.c) for the exact set of FW
