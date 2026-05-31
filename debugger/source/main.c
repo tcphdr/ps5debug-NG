@@ -315,7 +315,8 @@ static void debugger_server_loop(void) {
     static const char loaded_msg[]     = PS5DEBUG_NG_BRAND_STR " loaded!\n"
                                          "Coded by OpenSourcereR\n"
                                          "Special thanks to\n"
-                                         "golden, Ctn & SiSTRo! \xE2\x9D\xA4\n";
+                                         "golden, Ctn,  SiSTRo,\n"
+                                         "EchoStretch, Sonic-Iso  \xE2\x9D\xA4\n";
 
     char     ip_buf[16];
     uint32_t retry = 0;
